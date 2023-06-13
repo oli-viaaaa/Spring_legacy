@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans
+	xmlns="http://www.springframework.org/schema/mvc"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc 
+						https://www.springframework.org/schema/mvc/spring-mvc.xsd
+						http://www.springframework.org/schema/beans 
+						https://www.springframework.org/schema/beans/spring-beans.xsd
+						http://www.springframework.org/schema/context 
+						http://www.springframework.org/schema/context/spring-context-4.3.xsd">
+
+	<!-- DispatcherServlet Context: defines this servlet's request-processing 
+		infrastructure -->
+
+	<!-- 어노테이션을 통해서 빈으로 생성될 객체를 지정함. -->
+	<!-- @Component @Controller @Service @Repository 어노테이션으로 빈으로 만들 객체를 지정할 
+		때 인식 할 수 있도록 해주는 옵션 -->
+	<annotation-driven />
+
+	<!-- 특정 주소로 온 요청에 대해서 처리할 경로 설정 -->
+	<resources mapping="/resources/**" location="/resources/" />
+
+	<!-- jsp 페이지의 경로 설정/WEB-INF/views directory -->
+	<beans:bean
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<beans:property name="prefix" value="/WEB-INF/views/" />
+		<beans:property name="suffix" value=".jsp" />
+	</beans:bean>
+
+	<!-- 자식 컨테이너에 빈으로 생성할 클래스들을 스캔할 범위 지정 컴포넌트 : 컨트롤러/ 서비스/ Dao -->
+	<context:component-scan
+		base-package="com.javalab.board.controller" />
+
+</beans:beans>

@@ -1,0 +1,489 @@
+create table employees
+
+hr2 데이터베이스 생성 및 데이터 import
+hr2 데이터베이스 생성 및 데이터 import  
+
+-- 12c 버전 부터는 아래 문장 실행후 계정 생성 
+-- // sys 계정으로 접속해서 작업 // -------------------------------------------------------------
+-- // sys 계정으로 접속해서 작업 // -------------------------------------------------------------
+alter session set "_oracle_script"=true; 
+create user hr2 identified by 1234;
+grant all privileges to hr2;
+alter user hr2 default tablespace users quota unlimited on users;
+
+-- // hr2 계정으로 접속해서 작업 // ------------------------------------------------------------
+-- // hr2 계정으로 접속해서 작업 // ------------------------------------------------------------
+show user;
+> hr2
+
+create table regions
+    ( region_id      number constraint  reg_id_pk primary key,
+      region_name    varchar2(25)
+);
+
+create table countries
+    ( country_id      char(2) constraint country_c_id_pk primary key ,
+      country_name    varchar2(40),
+      region_id       number constraint countr_reg_fk
+		          	  references regions(region_id)
+    )
+
+create table locations
+    ( location_id    number(4) constraint loc_id_pk primary key,
+      street_address varchar2(40),
+      postal_code    varchar2(12),
+      city           varchar2(30) constraint loc_city_nn  not null,
+      state_province varchar2(25),
+      country_id     char(2) constraint loc_c_id_fk
+		        	 references countries(country_id)
+    ) ;
+
+create table departments
+    ( department_id    number(4) constraint dept_id_pk primary key,
+      department_name  varchar2(30) constraint  dept_name_nn  not null,
+      manager_id       number(6),
+      location_id      number(4) constraint dept_loc_fk
+        	  		   references locations (location_id)
+    ) ;
+
+create table jobs
+    ( job_id         varchar2(10) constraint job_id_pk primary key,
+      job_title      varchar2(35) constraint     job_title_nn  not null,
+      min_salary     number(6),
+      max_salary     number(6)
+    ) ;
+
+create table job_grades
+	( grade_level varchar2(3) constraint job_gra_level_pk primary key,
+	  lowest_sal number,
+	  highest_sal number);
+
+-- drop table employees cascade constraint;
+create table employees
+    ( employee_id    number(6) constraint emp_emp_id_pk primary key ,
+      first_name     varchar2(20),
+      last_name      varchar2(25) constraint emp_last_name_nn  not null,
+      email          varchar2(25),
+      phone_number   varchar2(20),
+      hire_date      date 		  constraint  emp_hire_date_nn  not null,
+      job_id         varchar2(10) constraint  emp_job_fk  references jobs(job_id),
+      salary         number(8,2)  constraint  emp_salary_min check (salary > 0),
+      commission_pct number(2,2),
+      manager_id     number(6) 	  constraint  emp_manager_fk references employees(employee_id),
+      department_id  number(4) constraint emp_dept_fk references departments(department_id)
+    ) ;
+alter table departments
+add (constraint dept_mgr_fk foreign key(manager_id) references employees (employee_id)
+    ) ;
+
+-- select * from tab;
+commit;
+
+
+create table job_history
+    ( employee_id   number(6) constraint    jhist_employee_nn  not null,
+      start_date    date 	constraint    jhist_start_date_nn  not null,
+      end_date      date	constraint    jhist_end_date_nn  not null,
+      job_id        varchar2(10) 	constraint    jhist_job_nn  not null,
+      department_id number(4),
+      constraint jhist_emp_id_st_date_pk primary key (employee_id, start_date),
+      constraint jhist_date_interval     check (end_date > start_date),
+      constraint jhist_job_fk foreign key (job_id) references jobs(job_id),
+      constraint jhist_emp_fk foreign key (employee_id) references employees(employee_id),
+      constraint jhist_dept_fk foreign key (department_id) references departments(department_id)
+    ) ;
+
+create sequence locations_seq
+ start with     3300
+ increment by   100
+ maxvalue       9900
+ nocache
+ nocycle;
+
+create sequence departments_seq
+ start with     280
+ increment by   10
+ maxvalue       9990
+ nocache
+ nocycle;
+
+create sequence employees_seq
+ start with     207
+ increment by   1
+ nocache
+ nocycle;
+
+create or replace view emp_details_view
+  (employee_id,
+   job_id,
+   manager_id,
+   department_id,
+   location_id,
+   country_id,
+   first_name,
+   last_name,
+   salary,
+   commission_pct,
+   department_name,
+   job_title,
+   city,
+   state_province,
+   country_name,
+   region_name)
+as select
+  e.employee_id,
+  e.job_id,
+  e.manager_id,
+  e.department_id,
+  d.location_id,
+  l.country_id,
+  e.first_name,
+  e.last_name,
+  e.salary,
+  e.commission_pct,
+  d.department_name,
+  j.job_title,
+  l.city,
+  l.state_province,
+  c.country_name,
+  r.region_name
+from
+  employees e,
+  departments d,
+  jobs j,
+  locations l,
+  countries c,
+  regions r
+where e.department_id = d.department_id
+  and d.location_id = l.location_id
+  and l.country_id = c.country_id
+  and c.region_id = r.region_id
+  and j.job_id = e.job_id
+with read only;
+
+commit;
+
+--set verify off
+--alter session set nls_language=american;
+
+insert into regions (region_id,region_name) values (1,'europe');
+insert into regions (region_id,region_name) values (2,'americas');
+insert into regions (region_id,region_name) values (3,'asia');
+insert into regions (region_id,region_name) values (4,'middle east and africa');
+
+insert into countries (country_id,country_name,region_id) values ('ca','canada',2);
+insert into countries (country_id,country_name,region_id) values ('de','germany',1);
+insert into countries (country_id,country_name,region_id) values ('uk','united kingdom',1);
+insert into countries (country_id,country_name,region_id) values ('us','united states of america',2);
+
+insert into locations (location_id,street_address,postal_code,city,state_province,country_id) values (1400,'2014 jabberwocky rd','26192','southlake','texas','us');
+insert into locations (location_id,street_address,postal_code,city,state_province,country_id) values (1500,'2011 interiors blvd','99236','south san francisco','california','us');
+insert into locations (location_id,street_address,postal_code,city,state_province,country_id) values (1700,'2004 charade rd','98199','seattle','washington','us');
+insert into locations (location_id,street_address,postal_code,city,state_province,country_id) values (1800,'147 spadina ave','m5v 2l7','toronto','ontario','ca');
+insert into locations (location_id,street_address,postal_code,city,state_province,country_id) values (2500,'magdalen centre, the oxford science park','ox9 9zb','oxford','oxford','uk');
+
+-- alter table departments  disable constraint dept_mgr_fk;
+
+insert into departments (department_id,department_name,manager_id,location_id) values (10,'administration',200,1700);
+insert into departments (department_id,department_name,manager_id,location_id) values (20,'marketing',201,1800);
+insert into departments (department_id,department_name,manager_id,location_id) values (50,'shipping',124,1500);
+insert into departments (department_id,department_name,manager_id,location_id) values (60,'it',103,1400);
+insert into departments (department_id,department_name,manager_id,location_id) values (80,'sales',149,2500);
+insert into departments (department_id,department_name,manager_id,location_id) values (90,'executive',100,1700);
+insert into departments (department_id,department_name,manager_id,location_id) values (110,'accounting',205,1700);
+insert into departments (department_id,department_name,manager_id,location_id) values (190,'contracting',null,1700);
+
+insert into jobs (job_id,job_title,min_salary,max_salary) values ('ad_pres','사장',20000,40000);
+insert into jobs (job_id,job_title,min_salary,max_salary) values ('ad_vp','관리 부사장',15000,30000);
+insert into jobs (job_id,job_title,min_salary,max_salary) values ('ad_asst','관리 보조역',3000,6000);
+insert into jobs (job_id,job_title,min_salary,max_salary) values ('ac_mgr','회계 관리자',8200,16000);
+insert into jobs (job_id,job_title,min_salary,max_salary) values ('ac_account','회계사',4200,9000);
+insert into jobs (job_id,job_title,min_salary,max_salary) values ('sa_man','영업관리자',10000,20000);
+insert into jobs (job_id,job_title,min_salary,max_salary) values ('sa_rep','영업담당자',6000,12000);
+insert into jobs (job_id,job_title,min_salary,max_salary) values ('st_man','증권관리자',5500,8500);
+insert into jobs (job_id,job_title,min_salary,max_salary) values ('st_clerk','증권사무원',2000,5000);
+insert into jobs (job_id,job_title,min_salary,max_salary) values ('it_prog','it프로그램 개발자',4000,10000);
+insert into jobs (job_id,job_title,min_salary,max_salary) values ('mk_man','마케팅 매니저',9000,15000);
+insert into jobs (job_id,job_title,min_salary,max_salary) values ('mk_rep','마케팅 담당자',4000,9000);
+
+insert into employees (employee_id,first_name,last_name,email,phone_number,hire_date,job_id,salary,commission_pct,manager_id,department_id) 
+values (100,'스티븐','킹','sking','515.123.4567',to_date('87/01/08','rr/mm/dd'),'ad_pres',24000,null,null,90);
+insert into employees (employee_id,first_name,last_name,email,phone_number,hire_date,job_id,salary,commission_pct,manager_id,department_id) 
+values (101,'니나','코커','nkochhar','515.123.4568',to_date('90/02/08','rr/mm/dd'),'ad_vp',17000,null,100,90);
+insert into employees (employee_id,first_name,last_name,email,phone_number,hire_date,job_id,salary,commission_pct,manager_id,department_id) 
+values (102,'렉스','데이안','ldehaan','515.123.4569',to_date('92/03/08','rr/mm/dd'),'ad_vp',17000,null,100,90);
+insert into employees (employee_id,first_name,last_name,email,phone_number,hire_date,job_id,salary,commission_pct,manager_id,department_id) 
+values (103,'알렉산더','휴놀드','ahunold','590.423.4567',to_date('93/04/08','rr/mm/dd'),'it_prog',9000,null,102,60);
+insert into employees (employee_id,first_name,last_name,email,phone_number,hire_date,job_id,salary,commission_pct,manager_id,department_id) 
+values (104,'부르스','어니스트','bernst','590.423.4568',to_date('95/05/10','rr/mm/dd'),'it_prog',6000,null,103,60);
+insert into employees (employee_id,first_name,last_name,email,phone_number,hire_date,job_id,salary,commission_pct,manager_id,department_id) 
+values (107,'다이에나','로렌츠','dlorentz','590.423.5567',to_date('85/06/08','rr/mm/dd'),'it_prog',4200,null,103,60);
+insert into employees (employee_id,first_name,last_name,email,phone_number,hire_date,job_id,salary,commission_pct,manager_id,department_id) 
+values (124,'케빈','무고스','kmourgos','650.123.5234',to_date('86/07/08','rr/mm/dd'),'st_man',5800,null,100,50);
+insert into employees (employee_id,first_name,last_name,email,phone_number,hire_date,job_id,salary,commission_pct,manager_id,department_id) 
+values (141,'트레나','라자스','trajs','650.121.8009',to_date('80/08/08','rr/mm/dd'),'st_clerk',3500,null,124,50);
+insert into employees (employee_id,first_name,last_name,email,phone_number,hire_date,job_id,salary,commission_pct,manager_id,department_id) 
+values (142,'쿠르츠','데이비스','cdavies','650.121.2994',to_date('95/09/08','rr/mm/dd'),'st_clerk',3100,null,124,50);
+insert into employees (employee_id,first_name,last_name,email,phone_number,hire_date,job_id,salary,commission_pct,manager_id,department_id) 
+values (143,'란달','마토스','rmatos','650.121.2874',to_date('96/10/08','rr/mm/dd'),'st_clerk',2600,null,124,50);
+insert into employees (employee_id,first_name,last_name,email,phone_number,hire_date,job_id,salary,commission_pct,manager_id,department_id) 
+values (144,'피터','바가스','pvargas','650.121.2004',to_date('20/11/08','rr/mm/dd'),'st_clerk',2500,null,124,50);
+insert into employees (employee_id,first_name,last_name,email,phone_number,hire_date,job_id,salary,commission_pct,manager_id,department_id) 
+values (149,'엘레니','즐롯키','ezlotkey','011.44.1344.429018',to_date('97/04/08','rr/mm/dd'),'sa_man',10500,0.2,100,80);
+insert into employees (employee_id,first_name,last_name,email,phone_number,hire_date,job_id,salary,commission_pct,manager_id,department_id) 
+values (174,'엘렌','아벨','eabel','011.44.1644.429267',to_date('21/05/08','rr/mm/dd'),'sa_rep',11000,0.3,149,80);
+insert into employees (employee_id,first_name,last_name,email,phone_number,hire_date,job_id,salary,commission_pct,manager_id,department_id) 
+values (176,'조나단','테일러','jtaylor','011.44.1644.429265',to_date('01/07/08','rr/mm/dd'),'sa_rep',8600,0.2,149,80);
+insert into employees (employee_id,first_name,last_name,email,phone_number,hire_date,job_id,salary,commission_pct,manager_id,department_id) 
+values (178,'킴벌리','그랜트','kgrant','011.44.1644.429263',to_date('97/03/08','rr/mm/dd'),'sa_rep',7000,0.15,149,null);
+insert into employees (employee_id,first_name,last_name,email,phone_number,hire_date,job_id,salary,commission_pct,manager_id,department_id) 
+values (200,'제니퍼','할른','jwhalen','515.123.4444',to_date('98/08/08','rr/mm/dd'),'ad_asst',4400,null,101,10);
+insert into employees (employee_id,first_name,last_name,email,phone_number,hire_date,job_id,salary,commission_pct,manager_id,department_id) 
+values (201,'마이클','헤르츠테인','mhartste','515.123.5555',to_date('99/12/08','rr/mm/dd'),'mk_man',13000,null,100,20);
+insert into employees (employee_id,first_name,last_name,email,phone_number,hire_date,job_id,salary,commission_pct,manager_id,department_id) 
+values (202,'팻','페이','pfay','603.123.6666',to_date('88/11/08','rr/mm/dd'),'mk_rep',6000,null,201,20);
+insert into employees (employee_id,first_name,last_name,email,phone_number,hire_date,job_id,salary,commission_pct,manager_id,department_id) 
+values (205,'셀리','히긴스','shiggins','515.123.8080',to_date('91/05/08','rr/mm/dd'),'ac_mgr',12000,null,101,110);
+insert into employees (employee_id,first_name,last_name,email,phone_number,hire_date,job_id,salary,commission_pct,manager_id,department_id) 
+values (206,'윌리암','게이츠','wgietz','515.123.8181',to_date('02/06/08','rr/mm/dd'),'ac_account',8300,null,205,110);
+
+insert into job_grades values('a',1000, 2999);
+insert into job_grades values('b',3000, 5999);
+insert into job_grades values('c',6000, 9999);
+insert into job_grades values('d',10000, 14999);
+insert into job_grades values('e',15000, 24999);
+insert into job_grades values('f',25000, 40000);
+
+insert into job_history (employee_id,start_date,end_date,job_id,department_id) values (102,to_date('93/01/13','yyyy/mm/dd'),to_date('98/06/24','yyyy/mm/dd'),'it_prog',60);
+insert into job_history (employee_id,start_date,end_date,job_id,department_id) values (101,to_date('90/04/13','yyyy/mm/dd'),to_date('95/06/24','yyyy/mm/dd'),'ac_account',110);
+insert into job_history (employee_id,start_date,end_date,job_id,department_id) values (101,to_date('93/01/13','yyyy/mm/dd'),to_date('97/06/24','yyyy/mm/dd'),'ac_mgr',110);
+insert into job_history (employee_id,start_date,end_date,job_id,department_id) values (201,to_date('96/01/13','yyyy/mm/dd'),to_date('99/06/24','yyyy/mm/dd'),'mk_rep',20);
+insert into job_history (employee_id,start_date,end_date,job_id,department_id) values (200,to_date('87/01/13','yyyy/mm/dd'),to_date('93/06/24','yyyy/mm/dd'),'ad_asst',90);
+insert into job_history (employee_id,start_date,end_date,job_id,department_id) values (176,to_date('98/01/13','yyyy/mm/dd'),to_date('98/12/24','yyyy/mm/dd'),'sa_rep',80);
+insert into job_history (employee_id,start_date,end_date,job_id,department_id) values (176,to_date('99/01/13','yyyy/mm/dd'),to_date('99/06/24','yyyy/mm/dd'),'sa_man',80);
+insert into job_history (employee_id,start_date,end_date,job_id,department_id) values (200,to_date('94/01/13','yyyy/mm/dd'),to_date('98/06/24','yyyy/mm/dd'),'ac_account',90);
+commit;
+
+-- 인덱스를 컬럼별로 별도 생성
+create index emp_department_ix on employees (department_id);
+create index emp_job_ix on employees (job_id);
+create index emp_manager_ix on employees (manager_id);
+create index emp_name_ix on employees (last_name, first_name);
+create index dept_location_ix on departments (location_id);
+create index jhist_job_ix on job_history (job_id);
+create index jhist_employee_ix on job_history (employee_id);
+create index jhist_department_ix on job_history (department_id);
+create index loc_city_ix on locations (city);
+create index loc_state_province_ix on locations (state_province);
+create index loc_country_ix on locations (country_id);
+commit;
+
+--// simple_board, role_tbl user_tbl 생성 //-------------------------------------------------------------
+--// simple_board, role_tbl user_tbl 생성 //-------------------------------------------------------------
+--// simple_board, role_tbl user_tbl 생성 //-------------------------------------------------------------
+
+
+--drop table role_tbl cascade constraints;
+create table role_tbl(
+    role_id varchar2(20) constraint role_pk primary key,
+    role_name varchar2(20) not null  
+    );    
+insert into role_tbl(role_id, role_name) values('admin', '관리자');    
+insert into role_tbl(role_id, role_name) values('usr', '일반사용자');    
+
+--drop table user_tbl cascade constraints;
+create table user_tbl(   
+	id varchar2(20) constraint user_id_pk primary key,  
+	pwd varchar2(20),  
+	name varchar2(50),  
+	email varchar2(100), 
+	role_id varchar2(20) constraint role_id_fk references role_tbl(role_id),  
+	joindate  date default sysdate	
+);
+
+create table simple_board (
+     no number(5),
+     title varchar(50)  not null,
+     content  varchar(1000) not null,
+     id varchar(20)  not null,
+     hit number (5) default 0,
+     regdate date default sysdate,
+     constraint simple_board_pk primary key(no),
+     constraint simple_board_id_fk foreign key(id) references user_tbl(id)
+       );
+create sequence seq_simple_board  increment by 1 start with 1;
+
+--// 페이징 사원목록 조회  //-------------------------------------------------------------
+--// 페이징 사원목록 조회  //-------------------------------------------------------------
+
+select a.employee_id, a.first_name, a.last_name, a.email, a.phone_number, a.hire_date, a.salary,
+        a.job_id, a.job_title, a.department_id, a.department_name,
+        a.location_id, a.state_province, a.city,
+        a.country_id, a.country_name
+from(
+        select /*+ INDEX_DESC(employees EMP_EMP_ID_PK) */  rownum rn,
+        e.employee_id, e.first_name, e.last_name, e.email, e.phone_number, e.hire_date, e.salary,
+        e.job_id, j.job_title, e.department_id, d.department_name,
+        d.location_id, l.state_province, l.city,
+        l.country_id, c.country_name
+        from employees e left outer join jobs j on e.job_id = j.job_id
+        inner join departments d on e.department_id = d.department_id
+        left outer join locations l on d.location_id = l.location_id
+        left outer join countries c on l.country_id = c.country_id
+      where 1=1
+		and (e.first_name like '%'||''||'%' or e.last_name like '%'||''||'%')
+        and rownum <= 10
+)a
+where rn > 0;
+
+
+--// 아래는 이번 프로젝트에서는 안해도 됨 //-------------------------------------------------------------
+--// 아래는 이번 프로젝트에서는 안해도 됨 //-------------------------------------------------------------
+--// 아래는 이번 프로젝트에서는 안해도 됨 //-------------------------------------------------------------
+
+
+
+create or replace procedure secure_dml
+is
+begin
+  if to_char (sysdate, 'hh24:mi') not between '08:00' and '18:00'
+        or to_char (sysdate, 'dy') in ('sat', 'sun') then
+	raise_application_error (-20205,
+		'you may only make changes during normal office hours');
+  end if;
+end secure_dml;
+/
+
+create or replace trigger secure_employees
+  before insert or update or delete on employees
+begin
+  secure_dml;
+end secure_employees;
+/
+
+alter trigger secure_employees disable;
+
+rem **************************************************************************
+rem procedure to add a row to the job_history table and row trigger
+rem to call the procedure when data is updated in the job_id or
+rem department_id columns in the employees table:
+
+create or replace procedure add_job_history
+  (  p_emp_id          job_history.employee_id%type
+   , p_start_date      job_history.start_date%type
+   , p_end_date        job_history.end_date%type
+   , p_job_id          job_history.job_id%type
+   , p_department_id   job_history.department_id%type
+   )
+is
+begin
+  insert into job_history (employee_id, start_date, end_date,
+                           job_id, department_id)
+    values(p_emp_id, p_start_date, p_end_date, p_job_id, p_department_id);
+end add_job_history;
+/
+
+create or replace trigger update_job_history
+  after update of job_id, department_id on employees
+  for each row
+begin
+  add_job_history(:old.employee_id, :old.hire_date, sysdate,
+                  :old.job_id, :old.department_id);
+end;
+/
+
+commit;
+
+commit;
+--execute dbms_stats.gather_table_stats ('hr','countries');
+--execute dbms_stats.gather_table_stats ('hr','departments');
+--execute dbms_stats.gather_table_stats ('hr','employees');
+--execute dbms_stats.gather_table_stats ('hr','jobs');
+--execute dbms_stats.gather_table_stats ('hr','job_grades');
+--execute dbms_stats.gather_table_stats ('hr','job_history');
+--execute dbms_stats.gather_table_stats ('hr','locations');
+--execute dbms_stats.gather_table_stats ('hr','regions');
+
+commit;
+
+--// 페이징과 인덱스 연습을 위한 게시판 생성 //-------------------------------------------
+-- 페이징 답변형 게시판을 위한 board table 생성
+
+-- board 데이터베이스에 board 테이블 생성
+-- drop table board;
+create table board (
+     no number(10),
+     title varchar(50)  not null,
+     content  varchar(1000) not null,
+     writer  varchar2(20),
+     hit number (5) default 0,
+     regdate date default sysdate
+      );
+-- primary key constraint 추가(테이블생성후 추가할 경우에 사용)
+-- 이렇게 생성해줘야 인덱스의 이름이 정식으로 붙는다.
+-- 안해주면 노멀인덱스 sys..... 로 시작하는 이름의 인덱스가 만들어짐
+alter table board add constraint board_no_pk primary key(no);
+
+
+-- 시퀀스 생성
+drop sequence seq_board;
+create sequence seq_board increment by 1 start with 1;
+
+--// 오라클 대량 데이터 삽입 방법 #1 //-------------------------------------------------------------------
+-- 재귀 복사로 쿼리문 실행시 데이터가 두 배씩 증가됨
+-- 먼저 한 개의 게시물을 저장하고 그 다음에
+-- delete from board;
+--// 1. 초기 한 번 게시물 저장//-----------------------------------------------------------------------------
+insert into board(no, title, content, writer, hit, regdate) values(seq_board.nextval, '제목입니다.', '내용 부분입니다.', '작성자', 0, sysdate); 
+commit;
+--// 2. 여러번 실행할 때마다 게시물이 두 배로 증가됨 //----------------------------------------------
+insert into board(no, title, content, writer, hit, regdate) 
+(select seq_board.nextval, title, content, writer, hit, regdate from board);
+
+--// 오라클 대량 데이터 삽입 방법 #2 //-------------------------------------------------------------------
+-- #1번 방법 보다 속도가 조금 빠르지만 양이 많으면 비슷해짐.
+-- 한꺼번에 원하는 만큼 삽입 가능, 한번 실행후 다시 실행하면 무결성 걸림, 처음부터 지우고 다시 실행
+-- delete from board;
+declare
+        type tbl_ins is table of board%rowtype index by binary_integer;
+        w_ins tbl_ins;
+begin
+        for i in 1 .. 200000 loop
+                w_ins(i).no := i;
+                w_ins(i).title := 'title';
+                w_ins(i).content := 'content';
+                w_ins(i).writer := 'writer';
+                w_ins(i).hit := 0;
+                w_ins(i).regdate := sysdate;
+        end loop;       
+        forall i in 1 .. 200000 insert into board values w_ins(i);
+        commit;
+end;
+
+commit;
+delete from board;
+
+alter table board add constraint pk_board primary key(no) using index;
+--// 오라클 노멀 인덱스 삭제하는 방법 //-----------------------------------------
+alter table board drop constraint sys_c0021260 cascade;
+
+
+select rownum, no, title, writer, regdate 
+from board
+where rownum <= 10
+order by no desc;
+
+select max(no)
+from board;
+-- 1048576
+
+select rownum, employee_id , first_name, last_name, email, hire_date
+from employees
+--where employee_id between 1 and 5
+order by employee_id desc;
+
+select e.salary, e.*
+from employees e
+--where rownum <= 10
+order by e.salary desc
+

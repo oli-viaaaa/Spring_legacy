@@ -1,0 +1,32 @@
+--drop table tbl_role cascade constraints;
+create table tbl_role(
+    role_id varchar2(20) constraint role_pk primary key,
+    role_name varchar2(20) not null  
+    );    
+insert into tbl_role(role_id, role_name) values('admin', '관리자');    
+insert into tbl_role(role_id, role_name) values('usr', '일반사용자');    
+
+--drop table tbl_user cascade constraints;
+create table tbl_user(   
+	id varchar2(20) constraint user_id_pk primary key,  
+	pwd varchar2(20),  
+	name varchar2(50),  
+	email varchar2(100), 
+	role_id varchar2(20) constraint role_id_fk references tbl_role(role_id),  
+	joindate  date default sysdate	
+);
+
+--drop table tbl_board cascade constraints;
+create table tbl_board (
+     no number(5),
+     title varchar(50)  not null,
+     content  varchar(1000) not null,
+     id varchar(20)  not null,
+     hit number (5) default 0,
+     regdate date default sysdate,
+     constraint simple_board_pk primary key(no),
+     constraint simple_board_id_fk foreign key(id) references tbl_user(id)
+);
+
+commit;
+       

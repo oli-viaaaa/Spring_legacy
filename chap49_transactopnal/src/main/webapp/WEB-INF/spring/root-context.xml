@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:jee="http://www.springframework.org/schema/jee"
+	xmlns:mybatis-spring="http://mybatis.org/schema/mybatis-spring"
+	xsi:schemaLocation="http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-4.3.xsd
+		http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee.xsd
+		http://mybatis.org/schema/mybatis-spring http://mybatis.org/schema/mybatis-spring-1.2.xsd
+		http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+	<!-- 다음 base-package에 있는 클래스들을 빈으로 생성 -->
+	<context:component-scan base-package="com.javalab.service"></context:component-scan>
+	
+	<bean id="hikariConfig" class="com.zaxxer.hikari.HikariConfig">
+   	    <property name="driverClassName" value="net.sf.log4jdbc.sql.jdbcapi.DriverSpy"/>
+	    <property name="jdbcUrl" value="jdbc:log4jdbc:oracle:thin:@127.0.0.1:1521:orcl"/>
+	    <property name="username" value="board"/>
+	    <property name="password" value="1234"/>
+	</bean>
+	
+	<bean id="dataSource" class="com.zaxxer.hikari.HikariDataSource" destroy-method="close">
+	    <constructor-arg ref="hikariConfig" />
+	</bean>			
+
+	<!-- [매퍼 인터페이스(Dao 인터페이스) 설정 방법.2 - 베이스 패키지 하위의 모든 인터페이스를 매퍼인터페이스로 인식] -->
+	<mybatis-spring:scan base-package="com.javalab.dao"/>
+
+	<!-- [SqlSessionFactoryBean] mybatis main config - SqlMapConfig.xml(typeAliases) and mapper file -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="configLocation" value="classpath:/config/sqlMapConfig.xml" />
+		<!-- 런타임시 SqlSessionFactory에 MyBatis mapper 파일들의 경로가 설정된다. ~/mapper/**/*.xml 일괄 등록해도 됨-->
+		<property name="mapperLocations" value="classpath:/mapper/oracle/*Mapper.xml" />
+	</bean>
+
+<!-- 	<bean id="sqlSession" class="org.mybatis.spring.SqlSessionTemplate">
+		<constructor-arg name="sqlSessionFactory" ref="sqlSessionFactory" />
+	</bean> -->
+
+	<bean id="sqlSession" class="org.mybatis.spring.SqlSessionTemplate">
+		<constructor-arg index="0" ref="sqlSessionFactory" />
+	</bean>
+	
+	<!-- 트랜잭션 설정
+		[1] XML설정이 아닌 @Transactional 어노테이션 기반의 트랜잭션 사용을 위한 선언. 
+		- 자바 코드의 클래스/메소드에 @Transactional 어노테이션을 선언하여 트랜잭션 제어.-->
+	<tx:annotation-driven />	
+
+	 <!-- [2] 트랜잭션 메니저 정의 -->
+     <bean id="transactionManager"
+           class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+         <property name="dataSource" ref="dataSource" />
+     </bean>
+
+	<!-- [3] 트랜잭션 사용시 필요했던 xml 설정이 필요없음. -->
+	<!-- 1. <tx:advice> 설정 불필요 -->
+	<!-- 2. <aop:config> Transaction Advisor 포인트컷 설정 불필요 -->
+	
+</beans>

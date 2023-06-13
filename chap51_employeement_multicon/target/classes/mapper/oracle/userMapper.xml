@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper 
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+	
+	<mapper	namespace="com.javalab.dao.UserDao">
+	
+	<!-- 게시물 등록 -->
+	<insert id = "insertUser" parameterType="UserVo">
+		INSERT INTO USER_TBL(
+			ID, 
+			PWD, 
+			NAME, 
+			EMAIL, 
+			ROLE_ID, 
+			JOINDATE) 
+		VALUES(
+			#{id}, 
+			#{pwd}, 
+			#{name}, 
+			#{email},
+			#{roleId},			 
+			SYSDATE)
+	</insert>
+	
+	<!-- 아이디 존재 유무 확인 -->
+	<select id = "idCheck" parameterType="String" resultType="int">
+		SELECT 
+		COUNT(ID) 
+		FROM USER_TBL 
+		WHERE ID=#{param1}
+	</select>	
+
+	<!-- 권한(Role) 조회 -->
+	<select id = "getRoles" resultType="RoleVo">
+		SELECT 
+		ROLE_ID, 
+		ROLE_NAME 
+		FROM ROLE_TBL
+	</select>	
+	
+</mapper>

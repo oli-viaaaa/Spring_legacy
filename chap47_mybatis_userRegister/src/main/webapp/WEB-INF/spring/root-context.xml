@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mybatis-spring="http://mybatis.org/schema/mybatis-spring"
+	xsi:schemaLocation="http://mybatis.org/schema/mybatis-spring http://mybatis.org/schema/mybatis-spring-1.2.xsd
+		http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd">
+	
+	<!-- datasource 빈등록(database.properties 관련내용 직접 입력) -->
+	<bean id="hikariConfig" class="com.zaxxer.hikari.HikariConfig">
+   	    <property name="driverClassName" value="net.sf.log4jdbc.sql.jdbcapi.DriverSpy"/>
+	    <property name="jdbcUrl" value="jdbc:log4jdbc:oracle:thin:@127.0.0.1:1521:orcl"/>
+	    <property name="username" value="board"/>
+	    <property name="password" value="1234"/>
+	</bean>	
+	
+	<bean id="dataSource" class="com.zaxxer.hikari.HikariDataSource" destroy-method="close">
+	    <constructor-arg ref="hikariConfig" />
+	</bean>	
+	
+	<!-- 서비스 패키지도 검색 대상에 포함 -->
+	<context:component-scan base-package="com.javalab.board.service" />
+	<!-- Dao 패키지도 검색 대상에 포함 -->
+	<context:component-scan base-package="com.javalab.board.dao" />
+	
+	<!-- [매퍼 인터페이스(Dao 인터페이스) 설정 방법.1 ] 
+		dao패키지에 있는 클래스들 중에서 @Mapper 어노테이션이 있는 클래스만
+		매퍼 인터페이스 인식하겠다는 선언-->
+	<mybatis-spring:scan base-package="com.javalab.board.dao"	
+					 annotation="org.apache.ibatis.annotations.Mapper"/> 
+					 <!-- mybatis-spring:scan : 맵퍼인터페이스를 찾는 경로지정 -->
+					 <!-- annotation="org.apache.ibatis.annotations.Mapper : @Mapper 어노테이션을 달고있는 클래스를 맵퍼로 인식한다 // 없어도 경로때문에 인식하긴함 -->
+	
+	<!-- [매퍼 인터페이스(Dao 인터페이스) 설정 방법.2 - 특정한 인터페이스만 매퍼인터페이스로 인식 가능 옵션] -->
+	<!-- <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer"> -->
+		<!-- 매퍼 인터페이스가 들어있는 경로.그 지정된 경로 안의 모든 인터페이스들은 매퍼 인터페이스 자격 -->
+		<!-- <property name="basePackage" value="com.javalab.board.dao" /> --> 
+		<!-- basePackage 경로에 있는 인터페이스들 중에서 @Mapper 어노테이션이 있는 인터페이스만 매퍼 인터페이스로 인정 -->
+		<!-- <property name="annotationClass" value="org.apache.ibatis.annotations.Mapper" /> -->
+	<!-- </bean>	 -->
+	
+	<!-- 마이바티스는 SqlSession을 통해서 모든 데이터베이스 관련 작업을 처리함.
+	SqlSessionFactoryBean은 sqlSession을 생산하는 역할을 함.  -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource"/>
+ 		<!-- 매퍼.xml(SQL쿼리문) 위치 설정 --> 
+		<property name="mapperLocations" value="classpath:mapper/*Mapper.xml" />
+		<!-- SQL문 실행결과를 받아오거나 파라미터 전달할 때 사용할 vo들의 위치 -->
+		<property name="typeAliasesPackage" value="com.javalab.board.vo"></property>
+		<!-- vo의 필드명과 SQL문의 select절의 컬럼명이 다를 경우의 처리 -->
+		<property name="configuration">
+			<bean class="org.apache.ibatis.session.Configuration">
+				<property name="mapUnderscoreToCamelCase" value="true"/>
+			</bean>
+		</property>
+	</bean>		
+
+	<!-- `SqlSessionTemplate`은 MyBatis에서 제공하는 `SqlSession` 인터페이스에 
+		대한 상위 수준 추상화이다. 세션 열기 및 닫기, 트랜잭션 커밋 또는 롤백, 데이터베이스 
+		작업 실행을 위한 편리한 방법 제공함. 'SqlSession' 개체의 수명 주기를 처리하여 
+		MyBatis 사용을 단순화함. 특히 스레드-safe함. 그냥 sqlSession은 여러 스레드가
+		동시에 접근할 경우 불안정하지만 SqlSessionTemplate은 여러 스레드가 동시에 접근
+		해도 하나의 스레드가 처리가 끝나야 다음 스레드에게 접근을 허용한다. 
+		이 구문이 없으면 마이바티스가 sqlSessionFactory가 생성하는 sqlSession을 사용
+		하게되지만 이 구문으로 sqlSessionTemplate을 만들면 이걸 사용하게 됨.-->
+	<bean id="sqlSession" class="org.mybatis.spring.SqlSessionTemplate">
+		<constructor-arg index="0" ref="sqlSessionFactory" />
+	</bean>			
+</beans>

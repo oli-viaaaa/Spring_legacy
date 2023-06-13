@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+	 
+<!-- 매퍼인터페이스의 위치를 정확한 풀경로로 지정
+	이 네임스페이스를 통해서 매퍼인터페이스와 연결된다. 
+	Dao Layer의 매퍼 인터페이스가 있는 정확한 주소여야 함.-->	 
+ <mapper namespace="com.javalab.mybatis.dao.BoardMapperInterface">
+
+	<!-- id는 유일한 쿼리 메소드 이름, resultType=반환결과를 담을 객체나 기본형 
+		parameterType=쿼리문에 파라미터로 전달되는 값/객체 -->
+		
+	<!-- 게시물 리스트 -->
+	<select id="selectBoardList" resultType="BoardVo"> 
+		SELECT NO, 
+			TITLE, 
+			WRITER, 
+			HIT, 
+			TO_CHAR(REGDATE,'YYYY-MM-DD') AS REGDATE
+		FROM SIMPLE_BOARD 
+		ORDER BY REGDATE DESC
+	</select>
+
+	<!-- 게시물 한개(상세보기) -->
+	<select id="getBoardById" parameterType="int" resultType="BoardVo">
+		 SELECT NO, 
+			 TITLE, 
+			 CONTENT, 
+			 WRITER, 
+			 HIT, 
+			 TO_CHAR(REGDATE,'YYYY-MM-DD') AS REGDATE 
+		 FROM SIMPLE_BOARD 
+		 WHERE NO=#{param1}
+	</select>
+
+	<!-- 게시물 등록 -->
+	<insert id = "insertBoard" parameterType="BoardVo">
+		INSERT INTO SIMPLE_BOARD(
+			NO, 
+			TITLE, 
+			CONTENT, 
+			WRITER,
+			REGDATE
+		)VALUES(
+			SEQ_SIMPLE_BOARD.NEXTVAL, 
+			#{title}, 
+			#{content}, 
+			#{writer},
+			SYSDATE
+		)
+	</insert>
+
+	<!-- 게시물 수정 -->
+	<update id = "modifyBoard" parameterType="BoardVo">
+		UPDATE SIMPLE_BOARD 
+		SET 
+			TITLE=#{title}, 
+			CONTENT=#{content}, 
+			WRITER=#{writer} 
+		WHERE NO=#{no}
+	</update>	
+	
+	<!-- 게시물 삭제 -->
+	<delete id = "deleteBoard" parameterType="int"> 
+		DELETE FROM SIMPLE_BOARD 
+		WHERE NO=#{no}
+	</delete>
+
+	<!-- 게시물 조회수증가 -->
+	<select id="updateHitCount" parameterType="int">
+		 UPDATE SIMPLE_BOARD SET 
+		 HIT = HIT + 1
+		 WHERE NO=#{param1}
+	</select>
+
+</mapper>	 

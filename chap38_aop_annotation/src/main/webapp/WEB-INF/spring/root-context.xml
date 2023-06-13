@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd">
+	
+	<!-- location에 있는 파일을 읽어들임. 읽어들여서 아래 dataSource에서 사용함 -->
+	<!-- 1. 읽을 경로 1 src/main/resources/config/database.properties를 읽어들임 -->
+	<!-- <context:property-placeholder location="classpath:config/database.properties" /> -->
+	<!-- 2. 읽을 경로 2 webapp/WEB-INF/config/database.propertieslocation 파일을 읽어들임. -->
+	<context:property-placeholder location="/WEB-INF/config/database.properties" />
+
+	<!-- AOP를 어노테이션 방식으로 사용하겠다고 선언 -->
+	<aop:aspectj-autoproxy></aop:aspectj-autoproxy>
+
+	<!-- datasource 빈등록 -->
+ 	<bean id="dataSource" class="org.apache.tomcat.jdbc.pool.DataSource">
+		<property name="driverClassName" value="${jdbc.driver}"></property>
+		<property name="url" value="${jdbc.url}"></property>
+		<property name="username" value="${jdbc.username}"></property>
+		<property name="password" value="${jdbc.password}"></property>
+	</bean>	
+
+	<!-- 서비스 패키지도 검색 대상에 포함 -->
+	<context:component-scan base-package="com.javalab.board.service" />
+	<!-- Dao 패키지도 검색 대상에 포함 -->
+	<context:component-scan base-package="com.javalab.board.dao" />
+	<!-- common 패키지도 검색 대상에 포함 -->
+	<context:component-scan base-package="com.javalab.board.common" />
+
+	<!-- 1. AOP BeforeAvice 설정 -->
+	<!-- 어드바이스 빈 등록
+		다음 경로에 있는 클래스를 before라는 이름으로 객체 생성해서 스프링 컨테이너에 빈 등록 -->
+	<!-- <bean id="before" class="com.javalab.board.common.BeforeAdvice"></bean> -->
+	<!-- aop:config : AOP 환경설정 구문 -->
+	<!-- <aop:config> -->
+		<!-- aop:pointcut : 포인트컷(aop적용대상 메소드) 정의 
+			expression 속성으로 대상 메소드를 한정한다. 
+			* : 리턴타입
+			com.javalab.board.. : 이 패키지 하위의 모든 패키지
+			*Impl : 클래스 중에서 이름이 ~Impl로 끝나는 클래스
+			*(..) : 모든 메소드
+			-->
+		<!-- <aop:pointcut 
+			expression="execution(* com.javalab.board..*Impl.*(..))" 
+			id="allPointcut" /> -->
+		
+		<!-- 애스펙트 설정(시점과 대상 한정) : 
+			 어떤 어드바이스를 어느 시점에 적용하겠다는 정의
+			 aop:aspect ref="before" : 저위의 before라는 빈 어드바이스를
+			 aop:before 시점에 allPointcut이라는 대상에게만 적용하겠다.
+			 method="beforeLog" : 어드바이스 빈에 있는 메소드 -->
+		<!-- <aop:aspect ref="before">
+			<aop:before method="beforeLog" pointcut-ref="allPointcut" />
+		</aop:aspect> -->
+	<!-- </aop:config> -->
+
+
+</beans>

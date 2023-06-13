@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+		https://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context 
+		http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/aop
+		 http://www.springframework.org/schema/aop/spring-aop-4.3.xsd">
+
+	<!-- property-placeholder -->
+	<!-- location에 있는 파일을 읽어들임. 읽어들여서 아래 dataSource에서 사용함. -->
+	<!-- 1. 읽을 경로 1 src/main/resources/comfig/database.properties를 읽어들임. -->
+	<!-- <context:property-placeholder location="classpath:config/database.properries"/> -->
+	<!-- 2. 읽을 경로 2 webapp/WEB-INF/config/database.propertieslocation 파일을 읽어들임. -->
+
+	<context:property-placeholder
+		location="classpath:config/database.properties" />
+
+	<!-- dataSource 빈 등록 -->
+	<bean id="dataSource"
+		class="org.apache.tomcat.jdbc.pool.DataSource">
+		<property name="driverClassName" value="${jdbc.driver}"></property>
+		<property name="url" value="${jdbc.url}"></property>
+		<property name="username" value="${jdbc.username}"></property>
+		<property name="password" value="${jdbc.password}"></property>
+	</bean>
+
+	<!-- Root Context: defines shared resources visible to all other web components -->
+
+	<!-- 서비스 패키지도 검색 대상에 포함 -->
+	<context:component-scan
+		base-package="com.javalab.board.service" />
+
+	<!-- Dao 패키지도 검색 대상에 포함 -->
+	<context:component-scan
+		base-package="com.javalab.board.dao" />
+
+	<!-- 1. AOP BeforAdvice -->
+	<!-- 어드바이스 빈 등록 다음 경로에 있는 클래스를 brfore라는 이름으로 객체 생성해서 스프링 컨테이너에 빈 등록 -->
+	<bean id="before" class="com.javalab.board.common.BeforeAdvice"></bean>
+
+	<!-- 2. AOP AfterAdvice 설정 -->
+	<!-- 어드바이스 빈 등록 -->
+	<bean id="after" class="com.javalab.board.common.AfterAdvice"></bean>
+
+	<!-- 3. AOP AroundAdvice 설정 -->
+	<!-- 어드바이스 빈 설정 -->
+	<bean id="around" class="com.javalab.board.common.AroundAdvice"></bean>
+
+	<!-- 4. AOP AfterReturningAdvice 설정 -->
+	<!-- 어드바이스 빈 설정 -->
+	<bean id="afterReturning"
+		class="com.javalab.board.common.AfterReturningAdvice"></bean>
+
+	<!-- 5. AOP After Throwing Advice -->
+	<!-- 어드바이스 빈 설정 -->
+	<bean id="afterThrowing"
+		class="com.javalab.board.common.AfterThrowingAdvice"></bean>
+
+
+	<!-- aop:config : AOP 환경설정 구문 -->
+	<!-- 1. befor 어드바이스 테스트 allPointcut/ getPointcut/ -->
+	<aop:config>
+		<!--1. 포인트컷 : Advice 적용대상 메소드를 한정하는 역할 aop:pointcut : 포인트컷(aop 적용대상 메소드) 
+			정의 expression 속성으로 대상 메소드를 한정한다. * : 리턴타입 com.javalab.board.. : 이 패키지 하위의 
+			모든 패키지 *Impl : 클래스 중에서 이름이 ~Impl로 끝나는 클래스 *(..) : 모든 메소드가 Advice 적용 대상 -->
+		<aop:pointcut id="allPointcut"
+			expression="execution(* com.javalab.board..*Impl.*(..))" />
+
+		<!-- 2. 또다른 포인트컷 : Advice 적용대상을 get으로 시작하는 메소드로 한정 -->
+		<aop:pointcut id="getPointcut"
+			expression="execution(* com.javalab.board..*Impl.get*(..))" />
+
+		<!-- 3. 애스펙트 설정, Advice와 포인트컷을 연결시켜주는 연결자 역할, 여기에 시점이 추가됨. 어떤 어드바이스를 어떤 
+			포인트컷에 어느 시점에 적용하겠다는 정의 3.1 aop:aspect ref="before" : 위의 before라는 어드바이스에 있는 
+			3.2 method="beforeLog" : beforeLog() 메소드를 3.3 allPointcut : 이라는 대상 포인터컷 메소드를 
+			실행하기 3.4 aop:before : 바로전에 실행하겠다 [해석] before라는 이름의 어드바이스에 있는 beforeLog 메소드를 
+			getPointcut 이라는 타겟 메소드를 실행하기 바로 전(before)에 실행해라. -->
+		<!-- <aop:aspect ref="before"> -->
+		<!-- <aop:before method="beforeLog" pointcut-ref="getPointcut" /> -->
+		<!-- </aop:aspect> -->
+
+		<!-- 2. AOP AroundAdvice 설정 -->
+		<!-- 어드바이스 빈 등록 -->
+		<!-- <aop:aspect ref="after"> -->
+		<!-- <aop:after method="finallyLog" pointcut-ref="getPointcut" /> -->
+		<!-- </aop:aspect> -->
+
+		<!-- 3. AOP AroundAdvice 설정 -->
+		<!-- 어드바이스 빈 설정 -->
+		<!-- <aop:aspect ref="around"> -->
+		<!-- <aop:around method="aroundLog" pointcut-ref="allPointcut" /> -->
+		<!-- </aop:aspect> -->
+
+		<!-- 4. AOP AfterReturningAdvice 설정 -->
+		<!-- 어드바이스 빈 설정 -->
+		<!-- <aop:aspect ref="afterReturning"> -->
+		<!-- <aop:after-returning method="afterLog" pointcut-ref="allPointcut" 
+			returning="returnObj"/> -->
+		<!-- </aop:aspect> -->
+
+		<!-- 5. AOP After Throwing Advice -->
+		<!-- 어드바이스 빈 설정 -->
+		<aop:aspect ref="afterThrowing">
+			<aop:after-throwing method="exceptionLog" pointcut-ref="allPointcut" throwing="exceptObj"/>
+		</aop:aspect>
+
+
+
+	</aop:config>
+
+
+</beans>

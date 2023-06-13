@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper 
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+	
+	<mapper	namespace="com.javalab.dao.EmployeeDao">
+	
+	<!-- 사원 목록 조회(페이징 + 검색 기능 추가) -->
+	<select id="getEmployeeList" parameterType="EmployeeCommonDto" resultType="EmployeeCommonDto">
+		SELECT A.EMPLOYEE_ID, 
+		A.FIRST_NAME, 
+		A.LAST_NAME, 
+		A.EMAIL, 
+		A.PHONE_NUMBER, 
+		A.HIRE_DATE, 
+		A.SALARY,
+	        A.JOB_ID, 
+	        A.JOB_TITLE, 
+	        A.DEPARTMENT_ID, 
+	        A.DEPARTMENT_NAME,
+	        A.LOCATION_ID, 
+	        A.STATE_PROVINCE, 
+	        A.CITY,
+	        A.COUNTRY_ID, 
+	        A.COUNTRY_NAME
+		FROM(
+		      SELECT /*+ INDEX_DESC(EMPLOYEES EMP_EMP_ID_PK) */  
+			      ROWNUM RN,
+			      E.EMPLOYEE_ID, 
+			      E.FIRST_NAME, 
+			      E.LAST_NAME, 
+			      E.EMAIL, 
+			      E.PHONE_NUMBER, 
+			      E.HIRE_DATE, 
+			      E.SALARY,
+			      E.JOB_ID, 
+			      J.JOB_TITLE, 
+			      E.DEPARTMENT_ID, 
+			      D.DEPARTMENT_NAME,
+			      D.LOCATION_ID, 
+			      L.STATE_PROVINCE, 
+			      L.CITY,
+			      L.COUNTRY_ID, 
+			      C.COUNTRY_NAME
+		      FROM EMPLOYEES E LEFT OUTER JOIN JOBS J ON E.JOB_ID = J.JOB_ID
+			      LEFT OUTER JOIN DEPARTMENTS D ON E.DEPARTMENT_ID = D.DEPARTMENT_ID
+			      LEFT OUTER JOIN LOCATIONS L ON D.LOCATION_ID = L.LOCATION_ID
+			      LEFT OUTER JOIN COUNTRIES C ON L.COUNTRY_ID = C.COUNTRY_ID
+		      WHERE 1=1
+		<if test="searchText != null">
+			AND (E.FIRST_NAME LIKE '%'||#{searchText}||'%' OR E.LAST_NAME LIKE '%'||#{searchText}||'%')
+		</if>	
+		<![CDATA[  		
+		      AND ROWNUM <= #{pageNum} * #{amount}
+		)A
+		WHERE RN > (#{pageNum} - 1) * #{amount}
+	    ]]> 
+	</select>
+	
+	<!-- 전체 사원수 -->
+	<select id = "getTotalEmployees" parameterType="Criteria" resultType="int">
+		SELECT COUNT(*)
+		FROM EMPLOYEES E
+		WHERE 1=1
+		<if test="searchText != null">
+			AND (E.FIRST_NAME LIKE '%'||#{searchText}||'%' 
+				 OR E.LAST_NAME LIKE '%'||#{searchText}||'%')
+		</if>		
+	</select>
+
+	<!-- 한 사원 조회 -->
+	<select id = "getEmpById" parameterType="int" resultType="Employee">
+		SELECT * 
+		FROM EMPLOYEES 
+		WHERE EMPLOYEE_ID=#{param1}
+	</select>
+
+	<!-- 사원 등록 -->
+	 <!-- jdbcType=VARCHAR, jdbcType=NUMERIC 옵션.
+	  	jsp 화면에서 혹시 빈값이 넘어왔을 경우의 처리를 하기 위함.
+	  	문자열 또는 문자 기반 열(예: VARCHAR 또는 CHAR)의 경우 MyBatis는 빈 값을 
+	  	빈 문자열('')로 취급하고 데이터베이스의 해당 열에 전달.
+		숫자 열(예: NUMERIC, INTEGER 또는 DECIMAL)의 경우 MyBatis는 빈 값을 
+		null 값으로 취급하고 데이터베이스의 해당 열에 NULL을 전달하기 위한용도.
+		jsp 화면의 값이 일단 마이바티스 데이터 타입에 바인딩 된 후에 DB로 전달
+		되기 때문에 중간의 마이바티스가 화면의 빈 값을 처리할 때 필요함.
+		이렇게 하지 않기 위해서는 SqlMapConfig.xml(마이바티스 환경 설정파일)
+		에 하면 되지만 현재 설정에서는 그 파일을 사용하지 않음. -->
+    <insert id="register" parameterType="Employee">
+    <![CDATA[
+        INSERT INTO EMPLOYEES(
+        	EMPLOYEE_ID,
+        	FIRST_NAME,
+        	LAST_NAME,
+        	EMAIL,
+        	PHONE_NUMBER,
+        	HIRE_DATE,
+        	JOB_ID,
+        	SALARY,
+        	COMMISSION_PCT,
+        	MANAGER_ID,
+        	DEPARTMENT_ID) 
+		VALUES (
+			EMPLOYEES_SEQ.NEXTVAL		
+			, #{firstName, jdbcType=VARCHAR}
+			, #{lastName, jdbcType=VARCHAR}
+			, #{email, jdbcType=VARCHAR}
+			, #{phoneNumber, jdbcType=VARCHAR}
+			, to_date(#{hireDate}, 'YYYY-MM-DD')
+			, #{jobId, jdbcType=VARCHAR}
+			, #{salary, jdbcType=NUMERIC }
+			, #{commissionPct, jdbcType=NUMERIC }
+			, #{managerId, jdbcType=NUMERIC}
+			, #{departmentId, jdbcType=NUMERIC}
+		)
+	]]>	 
+    </insert>	 
+
+
+</mapper>
